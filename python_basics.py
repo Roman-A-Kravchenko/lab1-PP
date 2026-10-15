@@ -1,43 +1,79 @@
-"""Заготовки задач на базовый Python."""
+"""Заготовки задач на базовом Python."""
 
-from grader_contracts.python_basics import PositiveIntegerInput, TextInput, VectorPairInput
+from grader_contracts.python_basics import (
+    PositiveIntegerInput, TextInput, VectorPairInput,
+)
 
 
 def count_vowels(data: TextInput) -> int:
     text = data.value
-    raise NotImplementedError  # TODO
+    vowels = set("aeiouAEIOU")
+    return sum(1 for ch in text if ch in vowels)
 
 
 def has_unique_characters(data: TextInput) -> bool:
     text = data.value
-    raise NotImplementedError  # TODO
+    return len(set(text)) == len(text)
 
 
 def count_one_bits(data: PositiveIntegerInput) -> int:
     number = data.value
-    raise NotImplementedError  # TODO
+    return bin(number).count("1")
 
 
 def multiplicative_persistence(data: PositiveIntegerInput) -> int:
     number = data.value
-    raise NotImplementedError  # TODO
+    steps = 0
+    while number >= 10:
+        product = 1
+        for digit in str(number):
+            product *= int(digit)
+        number = product
+        steps += 1
+    return steps
 
 
 def mse(data: VectorPairInput) -> float:
     predicted, expected = data.predicted, data.expected
-    raise NotImplementedError  # TODO
+    n = len(predicted)
+    if n == 0:
+        return 0.0
+    total = sum((p - e) ** 2 for p, e in zip(predicted, expected))
+    return total / n
 
 
 def prime_factorization(data: PositiveIntegerInput) -> str:
-    number = data.value
-    raise NotImplementedError  # TODO
+    n = data.value
+    result = []
+    divisor = 2
+    while divisor * divisor <= n:
+        if n % divisor == 0:
+            power = 0
+            while n % divisor == 0:
+                n //= divisor
+                power += 1
+            result.append(f"({divisor}**{power})" if power > 1 else f"({divisor})")
+        divisor += 1
+    if n > 1:
+        result.append(f"({n})")
+    return "".join(result)
 
 
 def pyramid(data: PositiveIntegerInput) -> int | str:
-    cube_count = data.value
-    raise NotImplementedError  # TODO
+    n = data.value
+    total, k = 0, 0
+    while total < n:
+        k += 1
+        total += k * k
+    return k if total == n else "It is impossible"
 
 
 def is_balanced_number(data: PositiveIntegerInput) -> bool:
-    number = data.value
-    raise NotImplementedError  # TODO
+    digits = [int(c) for c in str(data.value)]
+    n = len(digits)
+    mid = n // 2
+    if n % 2 == 1:
+        left, right = digits[:mid], digits[mid + 1:]
+    else:
+        left, right = digits[:mid - 1], digits[mid + 1:]
+    return sum(left) == sum(right)

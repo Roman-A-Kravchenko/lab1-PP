@@ -9,54 +9,103 @@ from grader_contracts.numpy_tasks import (
 
 
 def sum_prod(data: MatrixVectorBatchInput) -> np.ndarray:
-    matrices, vectors = data.matrices, data.vectors
-    raise NotImplementedError  # TODO
+    matrices = np.asarray(data.matrices)
+    vectors = np.asarray(data.vectors)
+    n = matrices.shape[1]
+    result = np.zeros((n, 1), dtype=np.result_type(matrices, vectors))
+    for A, x in zip(matrices, vectors):
+        result = result + A @ x
+    return result
 
 
 def binarize(data: BinarizeInput) -> np.ndarray:
-    matrix, threshold = data.matrix, data.threshold
-    raise NotImplementedError  # TODO
+    matrix = np.asarray(data.matrix)
+    return (matrix > data.threshold).astype(matrix.dtype)
 
 
 def unique_rows(data: MatrixInput) -> list[list[float]]:
-    matrix = data.matrix
-    raise NotImplementedError  # TODO
+    return [list(np.unique(row)) for row in np.asarray(data.matrix)]
 
 
 def unique_columns(data: MatrixInput) -> list[list[float]]:
-    matrix = data.matrix
-    raise NotImplementedError  # TODO
+    return [list(np.unique(col)) for col in np.asarray(data.matrix).T]
 
 
 def matrix_statistics(data: RandomMatrixInput) -> MatrixStatistics:
-    rows, columns, mean, std, seed = data.rows, data.columns, data.mean, data.std, data.seed
-    raise NotImplementedError  # TODO
+    rng = np.random.default_rng(data.seed)
+    matrix = rng.normal(
+        loc=data.mean, scale=data.std, size=(data.rows, data.columns)
+    )
+    return MatrixStatistics(
+        matrix=matrix,
+        row_means=np.mean(matrix, axis=1),
+        column_means=np.mean(matrix, axis=0),
+        row_variances=np.var(matrix, axis=1),
+        column_variances=np.var(matrix, axis=0),
+    )
 
 
 def chess(data: ChessInput) -> np.ndarray:
-    rows, columns, first, second = data.rows, data.columns, data.first, data.second
-    raise NotImplementedError  # TODO
+    i = np.arange(data.rows).reshape(-1, 1)
+    j = np.arange(data.columns).reshape(1, -1)
+    return np.where((i + j) % 2 == 0, data.first, data.second)
 
 
 def draw_rectangle(data: RectangleInput) -> np.ndarray:
-    width, height = data.width, data.height
-    image_height, image_width = data.image_height, data.image_width
-    shape_color, background_color = data.shape_color, data.background_color
-    raise NotImplementedError  # TODO
+    H, W = data.image_height, data.image_width
+    image = np.empty((H, W, 3), dtype=np.uint8)
+    image[:] = np.asarray(data.background_color, dtype=np.uint8)
+
+    cy, cx = H // 2, W // 2
+    y1 = max(0, cy - data.height // 2)
+    x1 = max(0, cx - data.width // 2)
+    y2 = min(H, y1 + data.height)
+    x2 = min(W, x1 + data.width)
+    image[y1:y2, x1:x2] = np.asarray(data.shape_color, dtype=np.uint8)
+    return image
 
 
 def draw_ellipse(data: EllipseInput) -> np.ndarray:
-    semi_axis_x, semi_axis_y = data.semi_axis_x, data.semi_axis_y
-    image_height, image_width = data.image_height, data.image_width
-    shape_color, background_color = data.shape_color, data.background_color
-    raise NotImplementedError  # TODO
+    H, W = data.image_height, data.image_width
+    image = np.empty((H, W, 3), dtype=np.uint8)
+    image[:] = np.asarray(data.background_color, dtype=np.uint8)
+
+    cy, cx = H // 2, W // 2
+    y, x = np.ogrid[:H, :W]
+    mask = ((x - cx) ** 2) / data.semi_axis_x ** 2 \
+         + ((y - cy) ** 2) / data.semi_axis_y ** 2 <= 1
+    image[mask] = np.asarray(data.shape_color, dtype=np.uint8)
+    return image
 
 
 def analyze_time_series(data: TimeSeriesInput) -> TimeSeriesStatistics:
-    values, window = data.values, data.window
-    raise NotImplementedError  # TODO
+    values = np.asarray(data.values, dtype=float)
+    p = data.window
+
+    maxima = [i for i in range(1, len(values) - 1)
+              if values[i] > values[i - 1] and values[i] > values[i + 1]]
+    minima = [i for i in range(1, len(values) - 1)
+              if values[i] < values[i - 1] and values[i] < values[i + 1]]
+
+    moving_average = (np.convolve(values, np.ones(p) / p, mode="valid")
+                      if 0 < p <= len(values)
+                      else np.array([], dtype=float))
+
+    return TimeSeriesStatistics(
+        mean=float(np.mean(values)),
+        variance=float(np.var(values)),
+        std=float(np.std(values)),
+        local_maxima_indices=np.array(maxima, dtype=int),
+        local_minima_indices=np.array(minima, dtype=int),
+        moving_average=moving_average,
+    )
 
 
 def one_hot(data: OneHotInput) -> np.ndarray:
-    labels, class_count = data.labels, data.class_count
-    raise NotImplementedError  # TODO
+    labels = np.asarray(data.labels, dtype=int)
+    class_count = (data.class_count if data.class_count is not None
+                   else (int(labels.max()) + 1 if labels.size else 0))
+    result = np.zeros((labels.size, class_count), dtype=int)
+    if labels.size:
+        result[np.arange(labels.size), labels] = 1
+    return result
